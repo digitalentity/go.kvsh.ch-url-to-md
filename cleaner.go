@@ -25,8 +25,6 @@ var noiseRoles = map[string]bool{
 	"contentinfo":   true,
 }
 
-// post-14182 post type-post status-publish format-standard has-post-thumbnail category-episodes category-your-time tag-limiting-beliefs tag-mindset tag-money-psychology tag-nir-eyal tag-self-improvement entry
-
 // noisePatterns are matched against individual tokens from class and id values.
 // Tokens are split on spaces, hyphens, and underscores to avoid false positives
 // (e.g. "ad" must not match "address" or "load").
@@ -61,6 +59,7 @@ var noisePatterns = map[string]bool{
 	"follow":                        true,
 	"subscribe":                     true,
 	"newsletter":                    true,
+	"newsletterbox":                 true,
 	"partner":                       true,
 	"affiliate":                     true,
 	"comment":                       true,
@@ -68,7 +67,6 @@ var noisePatterns = map[string]bool{
 	"footer":                        true,
 	"header":                        true,
 	"relatedcontent-relatedcontent": true,
-	"newsletterbox":                 true,
 	"bottalk":                       true,
 	"bottalk-wrapper":               true,
 	"feedbacklink":                  true,
@@ -118,5 +116,12 @@ func isNoise(n *html.Node) bool {
 // matchesNoisePattern reports whether any token in val exactly matches a noise
 // pattern. Tokens are split on spaces, hyphens, and underscores.
 func matchesNoisePattern(val string) bool {
-	return noisePatterns[strings.ToLower(val)]
+	for _, t := range strings.FieldsFunc(strings.ToLower(val), func(r rune) bool {
+		return r == ' ' || r == '-' || r == '_'
+	}) {
+		if noisePatterns[t] {
+			return true
+		}
+	}
+	return false
 }
