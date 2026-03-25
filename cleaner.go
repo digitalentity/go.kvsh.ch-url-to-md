@@ -25,22 +25,54 @@ var noiseRoles = map[string]bool{
 	"contentinfo":   true,
 }
 
+// post-14182 post type-post status-publish format-standard has-post-thumbnail category-episodes category-your-time tag-limiting-beliefs tag-mindset tag-money-psychology tag-nir-eyal tag-self-improvement entry
+
 // noisePatterns are matched against individual tokens from class and id values.
 // Tokens are split on spaces, hyphens, and underscores to avoid false positives
 // (e.g. "ad" must not match "address" or "load").
 var noisePatterns = map[string]bool{
-	"ad": true, "ads": true, "advert": true, "advertisement": true, "sponsor": true, "sponsored": true,
-	"banner": true, "promo": true,
-	"nav": true, "navigation": true, "menu": true, "breadcrumb": true,
-	"sidebar": true, "widget": true,
-	"cookie": true, "consent": true, "gdpr": true,
-	"popup": true, "modal": true, "overlay": true,
-	"related": true, "recommended": true, "trending": true, "popular": true,
-	"social": true, "share": true, "follow": true, "subscribe": true, "newsletter": true,
-	"partner": true, "affiliate": true,
-	"comment": true, "disqus": true,
-	"footer": true, "header": true,
-	"newsletterbox": true, "bottalk": true, "feedbacklink": true,
+	"ad":                            true,
+	"ads":                           true,
+	"advert":                        true,
+	"advertisement":                 true,
+	"sponsor":                       true,
+	"sponsored":                     true,
+	"banner":                        true,
+	"promo":                         true,
+	"nav":                           true,
+	"navigation":                    true,
+	"menu":                          true,
+	"breadcrumb":                    true,
+	"sidebar":                       true,
+	"sidebararticle-sidebar":        true,
+	"widget":                        true,
+	"cookie":                        true,
+	"consent":                       true,
+	"gdpr":                          true,
+	"popup":                         true,
+	"modal":                         true,
+	"overlay":                       true,
+	"related":                       true,
+	"recommended":                   true,
+	"trending":                      true,
+	"popular":                       true,
+	"social":                        true,
+	"share":                         true,
+	"follow":                        true,
+	"subscribe":                     true,
+	"newsletter":                    true,
+	"partner":                       true,
+	"affiliate":                     true,
+	"comment":                       true,
+	"disqus":                        true,
+	"footer":                        true,
+	"header":                        true,
+	"relatedcontent-relatedcontent": true,
+	"newsletterbox":                 true,
+	"bottalk":                       true,
+	"bottalk-wrapper":               true,
+	"feedbacklink":                  true,
+	"feedback":                      true,
 }
 
 // cleanDOM removes known noise nodes from the parsed HTML tree in-place.
@@ -86,14 +118,5 @@ func isNoise(n *html.Node) bool {
 // matchesNoisePattern reports whether any token in val exactly matches a noise
 // pattern. Tokens are split on spaces, hyphens, and underscores.
 func matchesNoisePattern(val string) bool {
-	lower := strings.ToLower(val)
-	tokens := strings.FieldsFunc(lower, func(r rune) bool {
-		return r == ' ' || r == '-' || r == '_'
-	})
-	for _, tok := range tokens {
-		if noisePatterns[tok] {
-			return true
-		}
-	}
-	return false
+	return noisePatterns[strings.ToLower(val)]
 }
