@@ -39,6 +39,10 @@ func main() {
 
 	fmt.Printf("Title:   %s\n", article.Title)
 	fmt.Printf("Byline:  %s\n", article.Byline)
-	fmt.Printf("Excerpt: %s\n\n", article.Excerpt)
+	fmt.Printf("Excerpt: %s\n", article.Excerpt)
+	fmt.Printf("Language: %s\n", article.Language)
+	if article.PublishedTime != nil {
+		fmt.Printf("Published: %s\n", article.PublishedTime)
+	}
 	fmt.Println(article.Content)
 }

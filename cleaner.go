@@ -67,6 +67,7 @@ var noisePatterns = map[string]bool{
 	"footer":                        true,
 	"header":                        true,
 	"relatedcontent-relatedcontent": true,
+	"relatedcontent-container":      true,
 	"bottalk":                       true,
 	"bottalk-wrapper":               true,
 	"feedbacklink":                  true,

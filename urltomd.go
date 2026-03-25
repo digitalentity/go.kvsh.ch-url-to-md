@@ -20,10 +20,12 @@ const (
 
 // Article holds the extracted content and metadata.
 type Article struct {
-	Title   string
-	Byline  string
-	Excerpt string
-	Content string // Markdown
+	Title         string
+	Byline        string
+	Excerpt       string
+	Content       string // Markdown
+	Language      string
+	PublishedTime *time.Time
 }
 
 // Option is a functional option for configuring Convert.
@@ -110,10 +112,12 @@ func Convert(rawURL string, opts ...Option) (*Article, error) {
 	}
 
 	return &Article{
-		Title:   article.Title,
-		Byline:  article.Byline,
-		Excerpt: article.Excerpt,
-		Content: collapseBlankLines(content),
+		Title:         article.Title,
+		Byline:        article.Byline,
+		Excerpt:       strings.Trim(article.Excerpt, " \t\n\r"),
+		Content:       collapseBlankLines(content),
+		Language:      article.Language,
+		PublishedTime: article.PublishedTime,
 	}, nil
 }
 
