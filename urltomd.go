@@ -9,7 +9,13 @@ import (
 
 	md "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/go-shiori/go-readability"
+	"go.uber.org/zap"
 	"golang.org/x/net/html"
+)
+
+const (
+	defaultUserAgent = "Mozilla/5.0 (compatible; url-to-md/1.0)"
+	defaultTimeout   = 30 * time.Second
 )
 
 // Article holds the extracted content and metadata.
@@ -27,13 +33,16 @@ type config struct {
 	timeout      time.Duration
 	userAgent    string
 	includeTitle bool
+	jar          http.CookieJar
+	logger       *zap.Logger
 }
 
 func defaultConfig() *config {
 	return &config{
-		timeout:      30 * time.Second,
-		userAgent:    "Mozilla/5.0 (compatible; url-to-md/1.0)",
+		timeout:      defaultTimeout,
+		userAgent:    defaultUserAgent,
 		includeTitle: true,
+		logger:       zap.NewNop(),
 	}
 }
 
@@ -52,6 +61,16 @@ func WithTitle(include bool) Option {
 	return func(c *config) { c.includeTitle = include }
 }
 
+// WithCookieJar sets the CookieJar for the HTTP client.
+func WithCookieJar(jar http.CookieJar) Option {
+	return func(c *config) { c.jar = jar }
+}
+
+// WithLogger sets the zap logger for logging.
+func WithLogger(logger *zap.Logger) Option {
+	return func(c *config) { c.logger = logger }
+}
+
 // Convert fetches the page at rawURL, strips known noise elements, then
 // extracts and returns the main article content as Markdown.
 func Convert(rawURL string, opts ...Option) (*Article, error) {
@@ -59,6 +78,8 @@ func Convert(rawURL string, opts ...Option) (*Article, error) {
 	for _, o := range opts {
 		o(cfg)
 	}
+
+	cfg.logger.Info("converting url", zap.String("url", rawURL))
 
 	parsedURL, err := url.ParseRequestURI(rawURL)
 	if err != nil {
@@ -76,6 +97,8 @@ func Convert(rawURL string, opts ...Option) (*Article, error) {
 	if err != nil {
 		return nil, fmt.Errorf("extracting content: %w", err)
 	}
+
+	cfg.logger.Debug("extracted article", zap.String("title", article.Title))
 
 	content, err := md.ConvertString(article.Content)
 	if err != nil {
@@ -95,7 +118,12 @@ func Convert(rawURL string, opts ...Option) (*Article, error) {
 }
 
 func fetch(rawURL string, cfg *config) (*html.Node, error) {
-	client := &http.Client{Timeout: cfg.timeout}
+	cfg.logger.Debug("fetching url", zap.String("url", rawURL))
+
+	client := &http.Client{
+		Timeout: cfg.timeout,
+		Jar:     cfg.jar,
+	}
 
 	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -109,6 +137,8 @@ func fetch(rawURL string, cfg *config) (*html.Node, error) {
 		return nil, fmt.Errorf("fetching url: %w", err)
 	}
 	defer resp.Body.Close()
+
+	cfg.logger.Debug("fetched url", zap.String("url", rawURL), zap.Int("status", resp.StatusCode))
 
 	ct := resp.Header.Get("Content-Type")
 	if !strings.Contains(ct, "text/html") {

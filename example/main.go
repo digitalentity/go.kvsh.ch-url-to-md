@@ -1,21 +1,37 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"net/http/cookiejar"
 	"os"
 
 	urltomd "go.kvsh.ch/url-to-md"
+	"go.uber.org/zap"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: example <url>")
+	verbose := flag.Bool("v", false, "verbose logging")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "usage: example [-v] <url>")
 		os.Exit(1)
 	}
 
-	article, err := urltomd.Convert(os.Args[1],
-		urltomd.WithUserAgent("MyReader/1.0"),
-	)
+	var opts []urltomd.Option
+	opts = append(opts, urltomd.WithUserAgent("MyReader/1.0"))
+
+	if *verbose {
+		logger, _ := zap.NewDevelopment()
+		opts = append(opts, urltomd.WithLogger(logger))
+	}
+
+	jar, _ := cookiejar.New(nil)
+	opts = append(opts, urltomd.WithCookieJar(jar))
+
+	article, err := urltomd.Convert(args[0], opts...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)

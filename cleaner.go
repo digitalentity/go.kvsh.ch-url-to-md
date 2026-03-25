@@ -40,6 +40,7 @@ var noisePatterns = map[string]bool{
 	"partner": true, "affiliate": true,
 	"comment": true, "disqus": true,
 	"footer": true, "header": true,
+	"newsletterbox": true, "bottalk": true, "feedbacklink": true,
 }
 
 // cleanDOM removes known noise nodes from the parsed HTML tree in-place.
