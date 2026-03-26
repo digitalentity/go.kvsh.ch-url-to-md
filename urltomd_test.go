@@ -181,6 +181,33 @@ func TestConvert_InvalidURL(t *testing.T) {
 	}
 }
 
+func TestConvert_Non200Status(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+	}{
+		{"404 Not Found", http.StatusNotFound},
+		{"500 Internal Server Error", http.StatusInternalServerError},
+		{"403 Forbidden", http.StatusForbidden},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte("<html><body><h1>Error</h1></body></html>"))
+			}))
+			defer srv.Close()
+
+			_, err := urltomd.Convert(srv.URL)
+			if err == nil {
+				t.Errorf("expected error for status %d, got nil", tt.status)
+			}
+		})
+	}
+}
+
 func TestConvert_NonHTMLContentType(t *testing.T) {
 	srv := serve(t, `{"key":"value"}`, "application/json")
 	defer srv.Close()

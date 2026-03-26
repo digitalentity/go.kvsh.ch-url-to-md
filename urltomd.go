@@ -142,6 +142,10 @@ func fetch(rawURL string, cfg *config) (*html.Node, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
 	cfg.logger.Debug("fetched url", zap.String("url", rawURL), zap.Int("status", resp.StatusCode))
 
 	ct := resp.Header.Get("Content-Type")
