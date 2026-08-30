@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"codeberg.org/readeck/go-readability/v2"
 	md "github.com/JohannesKaufmann/html-to-markdown/v2"
-	"github.com/go-shiori/go-readability"
 	"go.uber.org/zap"
 	"golang.org/x/net/html"
 )
@@ -159,20 +159,36 @@ func processDOM(doc *html.Node, parsedURL *url.URL, source Source, cfg *config) 
 		return nil, fmt.Errorf("extracting content: %w", err)
 	}
 
-	if strings.TrimSpace(article.Content) == "" && strings.TrimSpace(article.TextContent) == "" {
+	if article.Node == nil {
 		return nil, ErrEmptyContent
 	}
 
-	cfg.logger.Debug("extracted article", zap.String("title", article.Title))
+	var textBuf strings.Builder
+	if err := article.RenderText(&textBuf); err != nil {
+		return nil, fmt.Errorf("rendering text: %w", err)
+	}
+	textContent := textBuf.String()
+
+	var htmlBuf strings.Builder
+	if err := article.RenderHTML(&htmlBuf); err != nil {
+		return nil, fmt.Errorf("rendering html: %w", err)
+	}
+	htmlContent := htmlBuf.String()
+
+	if strings.TrimSpace(htmlContent) == "" && strings.TrimSpace(textContent) == "" {
+		return nil, ErrEmptyContent
+	}
+
+	cfg.logger.Debug("extracted article", zap.String("title", article.Title()))
 
 	// 4. Markdown conversion
-	content, err := md.ConvertString(article.Content)
+	content, err := md.ConvertString(htmlContent)
 	if err != nil {
 		return nil, fmt.Errorf("converting to markdown: %w", err)
 	}
 
-	if cfg.includeTitle && article.Title != "" {
-		content = "# " + article.Title + "\n\n" + content
+	if cfg.includeTitle && article.Title() != "" {
+		content = "# " + article.Title() + "\n\n" + content
 	}
 
 	collapsed := collapseBlankLines(content)
@@ -181,15 +197,20 @@ func processDOM(doc *html.Node, parsedURL *url.URL, source Source, cfg *config) 
 	}
 
 	// 5. Evaluate paywall signals against the extracted text.
-	isTruncated := signals.truncated(article.TextContent, article.Language)
+	isTruncated := signals.truncated(textContent, article.Language())
+
+	var publishedTime *time.Time
+	if pt, err := article.PublishedTime(); err == nil {
+		publishedTime = &pt
+	}
 
 	return &Article{
-		Title:         article.Title,
-		Byline:        article.Byline,
-		Excerpt:       strings.Trim(article.Excerpt, " \t\n\r"),
+		Title:         article.Title(),
+		Byline:        article.Byline(),
+		Excerpt:       strings.Trim(article.Excerpt(), " \t\n\r"),
 		Content:       collapsed,
-		Language:      article.Language,
-		PublishedTime: article.PublishedTime,
+		Language:      article.Language(),
+		PublishedTime: publishedTime,
 		IsTruncated:   isTruncated,
 		Source:        source,
 	}, nil
